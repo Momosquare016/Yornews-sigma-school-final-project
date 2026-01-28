@@ -49,3 +49,4 @@ client/build/
 
 # claude
 tmpclaude-fb7d-cwd
+.claude/
