@@ -22,6 +22,19 @@ function Dashboard() {
     const storageRefresh = sessionStorage.getItem('refreshNews') === 'true';
     const shouldRefresh = urlRefresh || storageRefresh;
 
+    // Get cached preferences if available (to avoid database replication lag)
+    let cachedPreferences = null;
+    if (shouldRefresh) {
+      const cached = sessionStorage.getItem('cachedPreferences');
+      if (cached) {
+        try {
+          cachedPreferences = JSON.parse(cached);
+        } catch (e) {
+          console.error('Failed to parse cached preferences:', e);
+        }
+      }
+    }
+
     // Clear the flags immediately
     if (storageRefresh) {
       sessionStorage.removeItem('refreshNews');
@@ -29,18 +42,20 @@ function Dashboard() {
     if (urlRefresh) {
       setSearchParams({}, { replace: true });
     }
+    // Clear cached preferences after using them
+    sessionStorage.removeItem('cachedPreferences');
 
-    fetchNews(shouldRefresh);
+    fetchNews(shouldRefresh, cachedPreferences);
     fetchSavedArticles();
   }, []);
 
-  async function fetchNews(forceRefresh = false) {
+  async function fetchNews(forceRefresh = false, cachedPreferences = null) {
     try {
       setLoading(true);
       setError('');
       setRateLimited(false);
 
-      const data = await api.getNews(forceRefresh);
+      const data = await api.getNews(forceRefresh, cachedPreferences);
 
       if (data.rateLimited) {
         setRateLimited(true);

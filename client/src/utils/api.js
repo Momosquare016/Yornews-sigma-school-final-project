@@ -78,7 +78,16 @@ export const api = {
   }),
 
   // News endpoints
-  getNews: (refresh = false) => apiCall(`/api/news${refresh ? '?refresh=true' : ''}`),
+  getNews: (refresh = false, preferences = null) => {
+    // If we have cached preferences, send them to avoid database replication lag
+    if (preferences) {
+      return apiCall('/api/news', {
+        method: 'POST',
+        body: JSON.stringify({ preferences, refresh }),
+      });
+    }
+    return apiCall(`/api/news${refresh ? '?refresh=true' : ''}`);
+  },
 
   // Saved articles endpoints
   getSaved: () => apiCall('/api/saved'),

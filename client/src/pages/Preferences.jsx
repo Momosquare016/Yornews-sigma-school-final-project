@@ -50,11 +50,16 @@ function Preferences() {
 
     try {
       setSubmitting(true);
-      await api.updatePreferences(preferenceText);
+      const result = await api.updatePreferences(preferenceText);
       setSuccess('Preferences saved successfully!');
 
       // Set flag to force refresh on next news fetch
       sessionStorage.setItem('refreshNews', 'true');
+
+      // Cache the preferences to avoid database replication lag issues
+      if (result.preferences) {
+        sessionStorage.setItem('cachedPreferences', JSON.stringify(result.preferences));
+      }
 
       setTimeout(() => {
         navigate('/news?refresh=true');

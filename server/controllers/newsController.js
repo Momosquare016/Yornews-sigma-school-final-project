@@ -19,17 +19,24 @@ async function getNews(req, res) {
       });
     }
 
-    // Get user preferences
-    const userResult = await db.query(
-      'SELECT preferences FROM users WHERE firebase_uid = $1',
-      [uid]
-    );
+    // Check if preferences were passed directly (to avoid database replication lag)
+    let preferences = req.body?.preferences;
 
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!preferences) {
+      // Fall back to fetching from database
+      const userResult = await db.query(
+        'SELECT preferences FROM users WHERE firebase_uid = $1',
+        [uid]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      preferences = userResult.rows[0].preferences;
+    } else {
+      console.log('Using preferences passed directly (bypassing DB)');
     }
-
-    const { preferences } = userResult.rows[0];
 
     if (!preferences) {
       return res.json({
