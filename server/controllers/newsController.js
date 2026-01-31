@@ -2,9 +2,6 @@ const db = require('../db');
 const { fetchArticles } = require('../services/newsApi');
 const { summarizeArticles, rankArticles, isRateLimited } = require('../services/groq');
 
-// Database-based caching - works across serverless instances
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
-
 // GET personalized news feed
 async function getNews(req, res) {
   try {
@@ -22,9 +19,9 @@ async function getNews(req, res) {
       });
     }
 
-    // Get user preferences and cached news
+    // Get user preferences
     const userResult = await db.query(
-      'SELECT preferences, news_cache, cache_updated_at FROM users WHERE firebase_uid = $1',
+      'SELECT preferences FROM users WHERE firebase_uid = $1',
       [uid]
     );
 
@@ -32,23 +29,13 @@ async function getNews(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const { preferences, news_cache, cache_updated_at } = userResult.rows[0];
+    const { preferences } = userResult.rows[0];
 
     if (!preferences) {
       return res.json({
         message: 'No preferences set. Please set your preferences first.',
         articles: [],
       });
-    }
-
-    // Check if we have valid cached news
-    if (news_cache && cache_updated_at) {
-      const cacheAge = Date.now() - new Date(cache_updated_at).getTime();
-      if (cacheAge < CACHE_DURATION) {
-        console.log('Returning cached news for user:', uid);
-        const cached = JSON.parse(news_cache);
-        return res.json({ ...cached, cached: true });
-      }
     }
 
     console.log('User preferences:', preferences);
@@ -111,12 +98,6 @@ async function getNews(req, res) {
       count: enrichedArticles.length,
       articles: enrichedArticles,
     };
-
-    // Save to database cache
-    await db.query(
-      'UPDATE users SET news_cache = $1, cache_updated_at = NOW() WHERE firebase_uid = $2',
-      [JSON.stringify(response), uid]
-    );
 
     res.json(response);
   } catch (error) {

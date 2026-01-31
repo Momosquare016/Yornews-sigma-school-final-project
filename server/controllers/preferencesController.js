@@ -43,9 +43,9 @@ async function updatePreferences(req, res) {
 
     console.log('Parsed preferences:', parsedPreferences);
 
-    // Update database and clear news cache so new preferences take effect
+    // Update database with new preferences
     const result = await db.query(
-      'UPDATE users SET preferences = $1, news_cache = NULL, cache_updated_at = NULL WHERE firebase_uid = $2 RETURNING preferences',
+      'UPDATE users SET preferences = $1 WHERE firebase_uid = $2 RETURNING preferences',
       [JSON.stringify(parsedPreferences), uid]
     );
 
