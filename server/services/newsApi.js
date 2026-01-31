@@ -37,14 +37,17 @@ async function fetchArticles(preferences) {
     return response.data.articles;
   } catch (error) {
     console.error('News API Error:', error.message);
-    
+    console.error('News API Response:', error.response?.data);
+    console.error('News API Status:', error.response?.status);
+
     // Return empty array instead of throwing to prevent complete failure
     if (error.response?.status === 429) {
       console.error('News API rate limit exceeded');
-      return [];
+      throw new Error('News API rate limit exceeded. Try again later.');
     }
-    
-    throw error;
+
+    // Rethrow with more context
+    throw new Error(`News API Error: ${error.response?.data?.message || error.message}`);
   }
 }
 
