@@ -20,7 +20,11 @@ const app = express();
 // MIDDLEWARE SETUP
 
 // 1. CORS - Allow requests from frontend (React app)
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CLIENT_URL || '*',
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 
 // 2. JSON Parser - Converts request body to JavaScript object
