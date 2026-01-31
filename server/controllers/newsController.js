@@ -2,39 +2,15 @@ const db = require('../db');
 const { fetchArticles } = require('../services/newsApi');
 const { summarizeArticles, rankArticles, isRateLimited } = require('../services/groq');
 
-// Simple in-memory cache to avoid repeated API calls
-const newsCache = new Map();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
-
-function getCachedNews(uid) {
-  const cached = newsCache.get(uid);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    console.log('Returning cached news for user:', uid);
-    return cached.data;
-  }
-  return null;
-}
-
-function setCachedNews(uid, data) {
-  newsCache.set(uid, {
-    data,
-    timestamp: Date.now(),
-  });
-}
-
-// Clear cache for a user (called when preferences are updated)
-function clearUserCache(uid) {
-  newsCache.delete(uid);
-  console.log('Cleared news cache for user:', uid);
-}
+// NOTE: In-memory caching disabled - doesn't work in serverless environments
+// Each function instance has its own memory, so cache isn't shared across requests
 
 // GET personalized news feed
 async function getNews(req, res) {
   try {
     const { uid } = req.user;
-    const forceRefresh = req.query.refresh === 'true';
 
-    console.log('Fetching news for user:', uid, forceRefresh ? '(forcing refresh)' : '');
+    console.log('Fetching news for user:', uid);
 
     // Check if rate limited - return error message
     if (isRateLimited()) {
@@ -44,17 +20,6 @@ async function getNews(req, res) {
         rateLimited: true,
         articles: [],
       });
-    }
-
-    // Check cache first (skip if refresh is forced)
-    if (!forceRefresh) {
-      const cached = getCachedNews(uid);
-      if (cached) {
-        return res.json(cached);
-      }
-    } else {
-      // Clear the old cache when forcing refresh
-      clearUserCache(uid);
     }
 
     // Get user preferences
@@ -135,11 +100,7 @@ async function getNews(req, res) {
     const response = {
       count: enrichedArticles.length,
       articles: enrichedArticles,
-      cached: false,
     };
-
-    // Cache the response
-    setCachedNews(uid, { ...response, cached: true });
 
     res.json(response);
   } catch (error) {
@@ -164,5 +125,4 @@ async function getNews(req, res) {
 
 module.exports = {
   getNews,
-  clearUserCache,
 };
