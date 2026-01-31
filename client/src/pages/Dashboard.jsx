@@ -45,11 +45,49 @@ function Dashboard() {
     fetchSavedArticles();
   }, []);
 
-  async function fetchNews(forceRefresh = false) {
+  async function fetchNews(forceRefresh = false, retryCount = 0) {
     try {
       setLoading(true);
       setError('');
       setRateLimited(false);
+
+      // Check if we have recently saved preferences that need to sync
+      const savedPrefsData = localStorage.getItem('lastSavedPreferences');
+      let needsVerification = false;
+      let expectedRawInput = null;
+
+      if (savedPrefsData) {
+        const { preferences, savedAt } = JSON.parse(savedPrefsData);
+        const ageInSeconds = (Date.now() - savedAt) / 1000;
+        // Only verify if preferences were saved in the last 60 seconds
+        if (ageInSeconds < 60) {
+          needsVerification = true;
+          expectedRawInput = preferences.raw_input;
+        } else {
+          // Clear old saved preferences
+          localStorage.removeItem('lastSavedPreferences');
+        }
+      }
+
+      // Fetch current preferences from server to verify sync
+      if (needsVerification && retryCount < 3) {
+        try {
+          const prefsData = await api.getPreferences();
+          const serverRawInput = prefsData.preferences?.raw_input;
+
+          if (serverRawInput !== expectedRawInput) {
+            console.log(`Preferences not synced yet (attempt ${retryCount + 1}), retrying...`);
+            // Wait 2 seconds and retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return fetchNews(forceRefresh, retryCount + 1);
+          } else {
+            // Preferences synced, clear the saved data
+            localStorage.removeItem('lastSavedPreferences');
+          }
+        } catch (prefErr) {
+          console.error('Failed to verify preferences:', prefErr);
+        }
+      }
 
       const data = await api.getNews(forceRefresh);
 

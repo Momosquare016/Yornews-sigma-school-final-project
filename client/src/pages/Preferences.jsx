@@ -50,8 +50,16 @@ function Preferences() {
 
     try {
       setSubmitting(true);
-      await api.updatePreferences(preferenceText);
+      const result = await api.updatePreferences(preferenceText);
       setSuccess('Preferences saved! Fetching your personalized news...');
+
+      // Store preferences locally to verify DB sync later
+      if (result.preferences) {
+        localStorage.setItem('lastSavedPreferences', JSON.stringify({
+          preferences: result.preferences,
+          savedAt: Date.now()
+        }));
+      }
 
       // Wait for DB to sync, then prefetch news before navigating
       // This ensures user sees fresh content when they land on news page
