@@ -56,17 +56,17 @@ function Navbar() {
             <Text style={{
               color: '#000',
               fontWeight: 'bold',
-              fontSize: 16,
-              fontFamily: "'UnifrakturMaguntia', cursive"
+              fontSize: 16
             }}>Y</Text>
           </div>
           <Text style={{
             color: '#fff',
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: 400,
-            fontFamily: "'UnifrakturMaguntia', cursive"
+            letterSpacing: 2,
+            fontFamily: "'Georgia', serif"
           }}>
-            YorNews
+            YORNEWS
           </Text>
         </Link>
 
@@ -107,7 +107,7 @@ function Navbar() {
                     fontWeight: 500
                   }}
                 >
-                  SUBSCRIBE
+                  REGISTER
                 </Button>
               </Link>
             </>
@@ -129,10 +129,11 @@ function Navbar() {
         title={
           <Text style={{
             color: '#fff',
-            fontFamily: "'UnifrakturMaguntia', cursive",
-            fontSize: 22
+            fontFamily: "'Georgia', serif",
+            fontSize: 18,
+            letterSpacing: 2
           }}>
-            YorNews
+            YORNEWS
           </Text>
         }
         placement="right"
@@ -203,7 +204,7 @@ function Navbar() {
                   fontWeight: 500
                 }}
               >
-                Subscribe
+                Register
               </Link>
             </>
           )}

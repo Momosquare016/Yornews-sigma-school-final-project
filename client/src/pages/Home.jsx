@@ -137,7 +137,7 @@ function Home() {
             color: #fff !important;
             font-size: 28px !important;
             font-weight: 400 !important;
-            font-family: 'UnifrakturMaguntia', cursive !important;
+            letter-spacing: 2px !important;
             margin-bottom: 16px !important;
             line-height: 1.3 !important;
           }

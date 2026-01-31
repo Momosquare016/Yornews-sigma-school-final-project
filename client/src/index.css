@@ -214,8 +214,3 @@ a:hover {
     font-size: 16px !important;
   }
 }
-
-/* Blackletter font for logos */
-.blackletter {
-  font-family: 'UnifrakturMaguntia', cursive;
-}
