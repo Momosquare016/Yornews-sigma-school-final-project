@@ -2,8 +2,8 @@ const db = require('../db');
 const { fetchArticles } = require('../services/newsApi');
 const { summarizeArticles, rankArticles, isRateLimited } = require('../services/groq');
 
-// NOTE: In-memory caching disabled - doesn't work in serverless environments
-// Each function instance has its own memory, so cache isn't shared across requests
+// Database-based caching - works across serverless instances
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
 
 // GET personalized news feed
 async function getNews(req, res) {
@@ -22,9 +22,9 @@ async function getNews(req, res) {
       });
     }
 
-    // Get user preferences
+    // Get user preferences and cached news
     const userResult = await db.query(
-      'SELECT preferences FROM users WHERE firebase_uid = $1',
+      'SELECT preferences, news_cache, cache_updated_at FROM users WHERE firebase_uid = $1',
       [uid]
     );
 
@@ -32,7 +32,7 @@ async function getNews(req, res) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const preferences = userResult.rows[0].preferences;
+    const { preferences, news_cache, cache_updated_at } = userResult.rows[0];
 
     if (!preferences) {
       return res.json({
@@ -41,9 +41,19 @@ async function getNews(req, res) {
       });
     }
 
+    // Check if we have valid cached news
+    if (news_cache && cache_updated_at) {
+      const cacheAge = Date.now() - new Date(cache_updated_at).getTime();
+      if (cacheAge < CACHE_DURATION) {
+        console.log('Returning cached news for user:', uid);
+        const cached = JSON.parse(news_cache);
+        return res.json({ ...cached, cached: true });
+      }
+    }
+
     console.log('User preferences:', preferences);
 
-    // Fetch articles from News API
+    // Fetch fresh articles from News API
     const articles = await fetchArticles(preferences);
 
     if (articles.length === 0) {
@@ -101,6 +111,12 @@ async function getNews(req, res) {
       count: enrichedArticles.length,
       articles: enrichedArticles,
     };
+
+    // Save to database cache
+    await db.query(
+      'UPDATE users SET news_cache = $1, cache_updated_at = NOW() WHERE firebase_uid = $2',
+      [JSON.stringify(response), uid]
+    );
 
     res.json(response);
   } catch (error) {
