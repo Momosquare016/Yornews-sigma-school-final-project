@@ -45,8 +45,3 @@ Thumbs.db
 
 # Build files
 client/build/
-
-
-# claude
-tmpclaude-fb7d-cwd
-.claude/
