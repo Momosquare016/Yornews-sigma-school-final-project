@@ -30,6 +30,14 @@ app.use(cors(corsOptions));
 // 2. JSON Parser - Converts request body to JavaScript object
 app.use(express.json());
 
+// 3. Disable caching for all API responses
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  next();
+});
+
 
 // TEST ROUTE - Check if server is running
 app.get('/', (req, res) => {
