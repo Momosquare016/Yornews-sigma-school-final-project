@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Layout, Button, Space, Typography, Drawer } from 'antd';
 import { ReadOutlined, BookOutlined, SettingOutlined, UserOutlined, LogoutOutlined, MenuOutlined, CloseOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import Logo from '../assets/Logo.png';
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -44,21 +45,12 @@ function Navbar() {
         height: 56
       }}>
         {/* Logo */}
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{
-            width: 28,
-            height: 28,
-            background: '#f5c518',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Text style={{
-              color: '#000',
-              fontWeight: 'bold',
-              fontSize: 16
-            }}>Y</Text>
-          </div>
+        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img
+            src={Logo}
+            alt="YorNews Logo"
+            style={{ height: 32, width: 'auto' }}
+          />
           <Text style={{
             color: '#fff',
             fontSize: 18,
