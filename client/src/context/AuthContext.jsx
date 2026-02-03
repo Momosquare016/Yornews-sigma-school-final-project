@@ -7,6 +7,9 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
 
+// API URL for backend calls
+const API_URL = import.meta.env.VITE_API_URL || '';
+
 // Create context
 const AuthContext = createContext();
 
@@ -34,7 +37,7 @@ export function AuthProvider({ children }) {
       const idToken = await user.getIdToken();
 
       // Register user in our backend database
-      const response = await fetch('/api/auth/register', {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
