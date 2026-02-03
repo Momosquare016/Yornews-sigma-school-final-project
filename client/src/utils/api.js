@@ -11,12 +11,20 @@ async function apiCall(endpoint, options = {}) {
   try {
     const token = getAuthToken();
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Add cache-busting timestamp to prevent Vercel edge caching
+    const cacheBuster = `_t=${Date.now()}`;
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const urlWithCacheBust = `${API_URL}${endpoint}${separator}${cacheBuster}`;
+
+    const response = await fetch(urlWithCacheBust, {
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
+      cache: 'no-store',
       ...options,
     });
 
