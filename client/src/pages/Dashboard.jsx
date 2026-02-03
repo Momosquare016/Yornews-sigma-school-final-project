@@ -17,26 +17,28 @@ function Dashboard() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Handle prefetched articles or new preferences from navigation
   useEffect(() => {
-    // Check if we have prefetched articles from Preferences page
     if (location.state?.prefetchedArticles) {
       setArticles(location.state.prefetchedArticles);
       setLoading(false);
-      // Clear the state and localStorage flag since we have fresh data
-      window.history.replaceState({}, document.title);
       localStorage.removeItem('lastSavedPreferences');
-      fetchSavedArticles();
-      return;
-    }
-
-    // Check if we came from Preferences with new preferences but no prefetched articles
-    if (location.state?.newPreferences) {
-      const prefs = location.state.newPreferences;
       window.history.replaceState({}, document.title);
-      setArticles([]); // Clear old articles immediately
+      fetchSavedArticles();
+    } else if (location.state?.newPreferences) {
+      const prefs = location.state.newPreferences;
+      setArticles([]);
+      setLoading(true);
+      window.history.replaceState({}, document.title);
       fetchNewsWithPreferences(prefs);
       fetchSavedArticles();
-      return;
+    }
+  }, [location.state]);
+
+  // Initial load (only when no state from navigation)
+  useEffect(() => {
+    if (location.state?.prefetchedArticles || location.state?.newPreferences) {
+      return; // Skip - handled by the other useEffect
     }
 
     // Check if we need to force refresh (e.g., after updating preferences)
@@ -54,7 +56,7 @@ function Dashboard() {
 
     fetchNews(shouldRefresh);
     fetchSavedArticles();
-  }, [location.key]);
+  }, []);
 
   // Fetch news using specific preferences (bypasses DB replication lag)
   async function fetchNewsWithPreferences(preferences) {
