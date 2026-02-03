@@ -18,6 +18,8 @@ function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
+    // Clear any stale news cache on mount
+    setArticles([]);
     fetchNews(true);
     fetchSavedArticles();
   }, []);

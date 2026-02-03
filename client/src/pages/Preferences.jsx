@@ -66,14 +66,18 @@ function Preferences() {
 
     try {
       setSubmitting(true);
+
+      // Clear ALL old preference data first
+      localStorage.removeItem('userPreferences');
+
       const result = await api.updatePreferences(preferenceText);
       setSuccess('Preferences saved! Loading your news...');
 
-      // Store preferences in localStorage as source of truth (avoids DB replication lag)
+      // Store new preferences in localStorage
       localStorage.setItem('userPreferences', JSON.stringify(result.preferences));
 
-      // Redirect to news
-      window.location.href = '/news';
+      // Force hard reload to /news (clears all cache)
+      window.location.replace('/news');
     } catch (err) {
       setError(err.message || 'Failed to save preferences');
     } finally {
