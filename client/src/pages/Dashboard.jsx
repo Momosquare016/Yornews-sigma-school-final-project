@@ -18,31 +18,7 @@ function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    // Check if we have prefetched articles from Preferences (via sessionStorage)
-    const prefetchedData = sessionStorage.getItem('prefetchedArticles');
-    if (prefetchedData) {
-      sessionStorage.removeItem('prefetchedArticles');
-      setArticles(JSON.parse(prefetchedData));
-      setLoading(false);
-      localStorage.removeItem('lastSavedPreferences');
-      fetchSavedArticles();
-      return;
-    }
-
-    // Check if we need to force refresh (e.g., after updating preferences)
-    const urlRefresh = searchParams.get('refresh') === 'true';
-    const storageRefresh = sessionStorage.getItem('refreshNews') === 'true';
-    const shouldRefresh = urlRefresh || storageRefresh;
-
-    // Clear the flags immediately
-    if (storageRefresh) {
-      sessionStorage.removeItem('refreshNews');
-    }
-    if (urlRefresh) {
-      setSearchParams({}, { replace: true });
-    }
-
-    fetchNews(shouldRefresh);
+    fetchNews(true);
     fetchSavedArticles();
   }, []);
 

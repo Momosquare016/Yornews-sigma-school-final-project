@@ -68,18 +68,12 @@ function Preferences() {
         // Small delay to let server process
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const newsData = await api.getNews(true, savedPreferences);
-        if (newsData.articles && newsData.articles.length > 0) {
-          // News fetched successfully, store in sessionStorage and reload
-          sessionStorage.setItem('prefetchedArticles', JSON.stringify(newsData.articles));
-          window.location.href = '/news';
-          return;
-        }
+        await api.getNews(true, savedPreferences);
       } catch (newsErr) {
-        console.log('News fetch with preferences failed:', newsErr.message);
+        console.log('News prefetch failed:', newsErr.message);
       }
 
-      // Fallback: force reload to get fresh news
+      // Force full page reload to show new preferences
       window.location.href = '/news';
     } catch (err) {
       setError(err.message || 'Failed to save preferences');
