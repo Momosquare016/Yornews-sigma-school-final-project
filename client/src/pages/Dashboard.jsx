@@ -414,6 +414,9 @@ function Dashboard() {
               <Paragraph style={{ color: '#888', marginTop: 20 }}>
                 Fetching your personalized news...
               </Paragraph>
+              <Paragraph style={{ color: '#666', fontSize: 12, marginTop: 8 }}>
+                This may take a moment, please wait.
+              </Paragraph>
             </div>
           )}
 
