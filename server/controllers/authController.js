@@ -51,7 +51,7 @@ async function getProfile(req, res) {
 
     // Get user from database
     const result = await db.query(
-      'SELECT id, firebase_uid, email, preferences, created_at FROM users WHERE firebase_uid = $1',
+      'SELECT id, firebase_uid, email, preferences, profile_image_url, created_at FROM users WHERE firebase_uid = $1',
       [uid]
     );
 
@@ -66,6 +66,7 @@ async function getProfile(req, res) {
         id: user.id,
         email: user.email,
         preferences: user.preferences ? JSON.parse(user.preferences) : null,
+        profile_image_url: user.profile_image_url,
         created_at: user.created_at,
       },
     });
@@ -75,7 +76,38 @@ async function getProfile(req, res) {
   }
 }
 
+// UPDATE PROFILE IMAGE
+async function updateProfileImage(req, res) {
+  try {
+    const { uid } = req.user;
+    const { profile_image_url } = req.body;
+
+    if (!profile_image_url) {
+      return res.status(400).json({ error: 'profile_image_url is required' });
+    }
+
+    // Update user's profile image URL
+    const result = await db.query(
+      'UPDATE users SET profile_image_url = $1 WHERE firebase_uid = $2 RETURNING id, email, profile_image_url',
+      [profile_image_url, uid]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      message: 'Profile image updated successfully',
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Update profile image error:', error);
+    res.status(500).json({ error: 'Failed to update profile image' });
+  }
+}
+
 module.exports = {
   register,
   getProfile,
+  updateProfileImage,
 };

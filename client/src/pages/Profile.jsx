@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Typography, Card, Button, Spin, Avatar, Descriptions } from 'antd';
-import { SettingOutlined, BookOutlined, LogoutOutlined } from '@ant-design/icons';
+import { Layout, Typography, Card, Button, Spin, Avatar, Descriptions, message } from 'antd';
+import { SettingOutlined, BookOutlined, LogoutOutlined, CameraOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { storage } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../utils/api';
 
@@ -11,7 +13,9 @@ const { Title } = Typography;
 function Profile() {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { currentUser, logout } = useAuth();
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+  const { currentUser, logout, setProfileImage } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,10 +26,57 @@ function Profile() {
     try {
       const data = await api.getProfile();
       setUserData(data.user);
+      if (data.user.profile_image_url) {
+        setProfileImage(data.user.profile_image_url);
+      }
     } catch (err) {
       console.error('Failed to fetch profile:', err);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      message.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      message.error('Image size must be less than 5MB');
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      // Create storage reference with user's UID
+      const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
+
+      // Upload file to Firebase Storage
+      await uploadBytes(storageRef, file);
+
+      // Get download URL
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Save URL to database
+      await api.updateProfileImage(downloadURL);
+
+      // Update local state
+      setUserData(prev => ({ ...prev, profile_image_url: downloadURL }));
+      setProfileImage(downloadURL);
+
+      message.success('Profile image updated');
+    } catch (err) {
+      console.error('Failed to upload image:', err);
+      message.error('Failed to upload image');
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -59,17 +110,41 @@ function Profile() {
         >
           {/* Profile Header */}
           <div style={{ textAlign: 'center', marginBottom: 30 }}>
-            <Avatar
-              size={80}
-              style={{
-                background: '#f5c518',
-                color: '#000',
-                fontSize: 32,
-                marginBottom: 16
-              }}
-            >
-              {currentUser?.email?.charAt(0).toUpperCase()}
-            </Avatar>
+            <div style={{ position: 'relative', display: 'inline-block', marginBottom: 16 }}>
+              <Avatar
+                size={80}
+                src={userData?.profile_image_url}
+                style={{
+                  background: '#f5c518',
+                  color: '#000',
+                  fontSize: 32
+                }}
+              >
+                {!userData?.profile_image_url && currentUser?.email?.charAt(0).toUpperCase()}
+              </Avatar>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
+              <Button
+                shape="circle"
+                size="small"
+                icon={uploading ? <LoadingOutlined /> : <CameraOutlined />}
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  background: '#f5c518',
+                  borderColor: '#f5c518',
+                  color: '#000'
+                }}
+              />
+            </div>
             <Title level={2} style={{ color: '#fff', marginBottom: 6, fontSize: 22 }}>
               Profile
             </Title>

@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
 
   // SIGNUP FUNCTION
   async function signup(email, password) {
@@ -92,10 +93,13 @@ export function AuthProvider({ children }) {
   async function logout() {
     try {
       setError(null);
-      
+
       // Clear token from localStorage
       localStorage.removeItem('authToken');
-      
+
+      // Clear profile image
+      setProfileImage(null);
+
       // Sign out from Firebase
       await signOut(auth);
     } catch (err) {
@@ -137,6 +141,8 @@ export function AuthProvider({ children }) {
     currentUser,
     loading,
     error,
+    profileImage,
+    setProfileImage,
     signup,
     login,
     logout,

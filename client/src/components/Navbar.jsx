@@ -1,15 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Layout, Button, Space, Typography, Drawer } from 'antd';
+import { Layout, Button, Space, Typography, Drawer, Avatar } from 'antd';
 import { ReadOutlined, BookOutlined, SettingOutlined, UserOutlined, LogoutOutlined, MenuOutlined, CloseOutlined } from '@ant-design/icons';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../utils/api';
 import Logo from '../assets/Logo.png';
 
 const { Header } = Layout;
 const { Text } = Typography;
 
 function Navbar() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, profileImage, setProfileImage } = useAuth();
+
+  // Fetch profile image on mount if user is logged in
+  useEffect(() => {
+    if (currentUser && !profileImage) {
+      api.getProfile()
+        .then(data => {
+          if (data.user?.profile_image_url) {
+            setProfileImage(data.user.profile_image_url);
+          }
+        })
+        .catch(err => console.error('Failed to fetch profile:', err));
+    }
+  }, [currentUser]);
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -27,7 +41,15 @@ function Navbar() {
     { to: '/news', icon: <ReadOutlined />, label: 'Dashboard' },
     { to: '/saved', icon: <BookOutlined />, label: 'Saved' },
     { to: '/preferences', icon: <SettingOutlined />, label: 'Preferences' },
-    { to: '/profile', icon: <UserOutlined />, label: 'Profile' },
+    {
+      to: '/profile',
+      icon: profileImage ? (
+        <Avatar src={profileImage} size={20} style={{ marginRight: -4 }} />
+      ) : (
+        <UserOutlined />
+      ),
+      label: 'Profile'
+    },
   ] : [];
 
   return (

@@ -77,6 +77,11 @@ export const api = {
 
   getProfile: () => apiCall('/api/auth/profile'),
 
+  updateProfileImage: (profile_image_url) => apiCall('/api/auth/profile-image', {
+    method: 'PUT',
+    body: JSON.stringify({ profile_image_url }),
+  }),
+
   // Preferences endpoints
   getPreferences: () => apiCall('/api/preferences'),
   
