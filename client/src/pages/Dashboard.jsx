@@ -12,7 +12,7 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [rateLimited, setRateLimited] = useState(false);
-  const [savedArticleUrls, setSavedArticleUrls] = useState(new Set());
+  const [savedArticles, setSavedArticles] = useState(new Map()); // Map<url, articleId>
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -112,21 +112,52 @@ function Dashboard() {
   async function fetchSavedArticles() {
     try {
       const data = await api.getSaved();
-      const urls = new Set(
-        data.articles.map(a => a.article_data?.url || a.url)
+      const urlToIdMap = new Map(
+        data.articles.map(a => [a.article_data?.url || a.url, a.id])
       );
-      setSavedArticleUrls(urls);
+      setSavedArticles(urlToIdMap);
     } catch (err) {
       console.error('Failed to fetch saved articles:', err);
     }
   }
 
-  async function handleSaveArticle(article) {
-    try {
-      await api.saveArticle(article);
-      setSavedArticleUrls(prev => new Set([...prev, article.url]));
-    } catch (err) {
-      throw err;
+  async function handleToggleSave(article) {
+    const url = article.url;
+    const isSaved = savedArticles.has(url);
+
+    if (isSaved) {
+      // Unsave - optimistic update
+      const articleId = savedArticles.get(url);
+      setSavedArticles(prev => {
+        const next = new Map(prev);
+        next.delete(url);
+        return next;
+      });
+
+      try {
+        await api.removeSaved(articleId);
+      } catch (err) {
+        // Revert on failure
+        setSavedArticles(prev => new Map(prev).set(url, articleId));
+        console.error('Failed to unsave article:', err);
+      }
+    } else {
+      // Save - optimistic update with temporary ID
+      setSavedArticles(prev => new Map(prev).set(url, 'pending'));
+
+      try {
+        const result = await api.saveArticle(article);
+        // Update with real ID from server
+        setSavedArticles(prev => new Map(prev).set(url, result.article.id));
+      } catch (err) {
+        // Revert on failure
+        setSavedArticles(prev => {
+          const next = new Map(prev);
+          next.delete(url);
+          return next;
+        });
+        console.error('Failed to save article:', err);
+      }
     }
   }
 
@@ -183,7 +214,7 @@ function Dashboard() {
                 icon={<BookOutlined />}
                 className="action-btn"
               >
-                Saved ({savedArticleUrls.size})
+                Saved ({savedArticles.size})
               </Button>
             </Link>
             <Link to="/preferences">
@@ -459,18 +490,17 @@ function Dashboard() {
                         <Button
                           type="text"
                           size="small"
-                          icon={savedArticleUrls.has(article.url) ? <HeartFilled style={{ color: '#f5c518' }} /> : <HeartOutlined />}
-                          onClick={() => handleSaveArticle(article)}
-                          disabled={savedArticleUrls.has(article.url)}
+                          icon={savedArticles.has(article.url) ? <HeartFilled style={{ color: '#f5c518' }} /> : <HeartOutlined />}
+                          onClick={() => handleToggleSave(article)}
                           style={{
-                            color: savedArticleUrls.has(article.url) ? '#f5c518' : '#666',
+                            color: savedArticles.has(article.url) ? '#f5c518' : '#666',
                             padding: 0,
                             marginTop: 4,
                             height: 'auto',
                             fontSize: 12
                           }}
                         >
-                          {savedArticleUrls.has(article.url) ? 'Saved' : 'Save'}
+                          {savedArticles.has(article.url) ? 'Saved' : 'Save'}
                         </Button>
                       </div>
                     </div>
@@ -538,18 +568,17 @@ function Dashboard() {
                             </Button>
                           </a>
                           <Button
-                            icon={savedArticleUrls.has(featuredArticle.url) ? <HeartFilled /> : <HeartOutlined />}
-                            onClick={() => handleSaveArticle(featuredArticle)}
-                            disabled={savedArticleUrls.has(featuredArticle.url)}
+                            icon={savedArticles.has(featuredArticle.url) ? <HeartFilled /> : <HeartOutlined />}
+                            onClick={() => handleToggleSave(featuredArticle)}
                             style={{
                               background: 'transparent',
                               border: 'none',
-                              color: savedArticleUrls.has(featuredArticle.url) ? '#f5c518' : '#fff',
+                              color: savedArticles.has(featuredArticle.url) ? '#f5c518' : '#fff',
                               padding: 0,
                               fontSize: 12
                             }}
                           >
-                            {savedArticleUrls.has(featuredArticle.url) ? 'SAVED' : 'SAVE'}
+                            {savedArticles.has(featuredArticle.url) ? 'SAVED' : 'SAVE'}
                           </Button>
                         </div>
                       </div>
@@ -621,12 +650,11 @@ function Dashboard() {
                             <Button
                               type="text"
                               size="small"
-                              icon={savedArticleUrls.has(article.url) ? <HeartFilled style={{ color: '#f5c518' }} /> : <HeartOutlined />}
-                              onClick={() => handleSaveArticle(article)}
-                              disabled={savedArticleUrls.has(article.url)}
-                              style={{ color: savedArticleUrls.has(article.url) ? '#f5c518' : '#888', fontSize: 11, padding: '0 4px' }}
+                              icon={savedArticles.has(article.url) ? <HeartFilled style={{ color: '#f5c518' }} /> : <HeartOutlined />}
+                              onClick={() => handleToggleSave(article)}
+                              style={{ color: savedArticles.has(article.url) ? '#f5c518' : '#888', fontSize: 11, padding: '0 4px' }}
                             >
-                              {savedArticleUrls.has(article.url) ? 'Saved' : 'Save'}
+                              {savedArticles.has(article.url) ? 'Saved' : 'Save'}
                             </Button>
                           </div>
                         </Card>
